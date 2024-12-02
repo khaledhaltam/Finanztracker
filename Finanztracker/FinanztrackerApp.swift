@@ -11,7 +11,11 @@ import SwiftUI
 struct FinanztrackerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Content()
         }
     }
+}
+
+#Preview {
+    Content()
 }
