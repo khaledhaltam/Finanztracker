@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AddContract: View {
+struct AddContractView: View {
     @Environment(\.presentationMode) var presentationMode
     @Binding var contracts: [ContractDto]
     
@@ -91,5 +91,5 @@ struct AddContract: View {
         ContractDto(name: "Fitnessstudio", amount: 49.99, icon: "heart.fill", nextPaymentDate: Date().addingTimeInterval(86400 * 20), frequency: "Monatlich"),
         ContractDto(name: "Amazon Prime", amount: 69.00, icon: "cart.fill", nextPaymentDate: Date().addingTimeInterval(86400 * 30), frequency: "Jährlich")
     ]
-    AddContract(contracts: $contracts)
+    AddContractView(contracts: $contracts)
 }

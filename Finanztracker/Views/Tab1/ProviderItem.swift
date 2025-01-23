@@ -1,24 +1,22 @@
-//
-//  FinancialItemView.swift
-//  Finanztracker
-//
-//  Created by Khaled Abuhaltam on 06.11.24.
-//
-
 import SwiftUI
 
-struct Provider: View {
+struct ProviderItem: View {
     let provider: ProviderDto
 
     // Berechnete Eigenschaft für die Farbe basierend auf dem Betrag
-    private var amountColor: Color {
-        if provider.amount > 0 {
+    private func amountColor(for amount: Double) -> Color {
+        if amount > 0 {
             return .green
-        } else if provider.amount < 0 {
+        } else if amount < 0 {
             return .red
         } else {
             return .gray
         }
+    }
+
+    // Berechneter Gesamtbetrag basierend auf den Transaktionen
+    private var totalAmount: Double {
+        provider.transactions.reduce(0) { $0 + $1.amount }
     }
 
     var body: some View {
@@ -27,22 +25,18 @@ struct Provider: View {
                 .resizable()
                 .frame(width: 30, height: 30)
                 .padding(.trailing, 8)
-            VStack(alignment: .leading) {
-                Text(provider.title)
-                    .font(.headline)
-                Text(provider.amount, format: .currency(code: "EUR"))
-                    .foregroundColor(amountColor)
-            }
+            Text(provider.title)
             Spacer()
+            Text(totalAmount, format: .currency(code: "EUR"))
+                .foregroundColor(amountColor(for: totalAmount))
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
     }
-
 }
 
 #Preview {
     let f = ProviderDto(
-        title: "Volksbank Mittelhessen (...9433)", amount: 1544.08,
+        title: "Volksbank Mittelhessen (...9433)",
         icon: "eurosign.bank.building",
         transactions: [
             TransactionDto(title: "Netflix", amount: 14.99, date: Date()),
@@ -51,5 +45,5 @@ struct Provider: View {
         ],
         type: .debitCard
     )
-    Provider(provider: f)
+    ProviderItem(provider: f)
 }

@@ -6,15 +6,13 @@
 //
 
 import Foundation
-import SwiftUI
 
 // Einzelne Finanzdienstleister in einer Kategorie
 struct ProviderDto: Identifiable{
     let id = UUID()
     let title: String
-    let amount: Double
     let icon: String
-    let transactions: [TransactionDto]
+    var transactions: [TransactionDto]
     let type: ProviderType
 }
 

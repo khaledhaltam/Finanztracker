@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TransactionDetails: View {
+struct TransactionView: View {
     let transaction: TransactionDto
     
     // Farbe für den Betrag basierend auf positiv oder negativ
@@ -55,5 +55,5 @@ struct TransactionDetails: View {
         amount: -23.45,
         date: Date()
     )
-    TransactionDetails(transaction: exampleTransaction)
+    TransactionView(transaction: exampleTransaction)
 }
