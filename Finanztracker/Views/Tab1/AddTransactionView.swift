@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct AddTransactionView: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var provider: ProviderDto // Verwende Binding, um Änderungen vorzunehmen
+    @EnvironmentObject var data: Data
+    @Binding var provider: ProviderDto
+    @Environment(\.presentationMode) var presentationMode
 
     @State private var title: String = ""
     @State private var amount: String = ""
@@ -11,49 +12,84 @@ struct AddTransactionView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Details")) {
+                Section(header: Text("Transaktionsdetails")) {
                     TextField("Titel", text: $title)
-                    TextField("Betrag", text: $amount)
-                        .keyboardType(.decimalPad)
-                    DatePicker("Datum", selection: $date, displayedComponents: .date)
-                }
-
-                Section {
-                    Button(action: {
-                        addTransaction()
-                    }) {
-                        HStack {
-                            Spacer()
-                            Text("Speichern")
-                                .fontWeight(.bold)
-                            Spacer()
+                    HStack {
+                        TextField("Betrag eingeben", text: $amount)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: amount) { newValue in
+                                // Nur Zahlen, Punkt, und ein Minuszeichen am Anfang erlauben
+                                let filtered = newValue.filter {
+                                    "0123456789.-".contains($0)
+                                }
+                                if filtered != newValue {
+                                    amount = filtered
+                                }
+                                if amount.contains("-"),
+                                    !amount.starts(with: "-")
+                                {
+                                    // Entfernt Minuszeichen, wenn es nicht am Anfang steht
+                                    amount = amount.replacingOccurrences(
+                                        of: "-", with: "")
+                                }
+                            }
+                        Button(action: {
+                            // Umschalten zwischen negativ und positiv
+                            if amount.starts(with: "-") {
+                                amount = String(amount.dropFirst())  // Entfernt das Minus
+                            } else {
+                                amount = "-" + amount  // Fügt das Minus hinzu
+                            }
+                        }) {
+                            Text(amount.starts(with: "-") ? "+" : "−")  // Dynamischer Buttontext
+                                .font(.title)
+                                .cornerRadius(25)
                         }
+                    }
+                    DatePicker(
+                        "Datum", selection: $date, displayedComponents: .date)
+                }
+            }
+            .navigationTitle("Neue Transaktion")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Speichern") {
+                        saveTransaction()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Abbrechen") {
+                        presentationMode.wrappedValue.dismiss()
                     }
                 }
             }
-            .navigationTitle("Transaktion hinzufügen")
-            .navigationBarItems(
-                leading: Button("Abbrechen") {
-                    dismiss()
-                }
-            )
         }
     }
 
-    private func addTransaction() {
-        // Logik zum Hinzufügen der Transaktion
-        guard let amountValue = Double(amount) else { return }
-        let newTransaction = TransactionDto(title: title, amount: amountValue, date: date)
-        provider.transactions.append(newTransaction) // Transaktion zur Liste hinzufügen
-        dismiss()
+    private func saveTransaction() {
+        guard let transactionAmount = Double(amount), !title.isEmpty else {
+            return
+        }
+
+        let newTransaction = TransactionDto(
+            title: title, amount: transactionAmount, date: date)
+
+        if let index = data.providers.firstIndex(where: { $0.id == provider.id }
+        ) {
+            data.providers[index].transactions.append(newTransaction)
+        }
+
+        presentationMode.wrappedValue.dismiss()
     }
 }
 
 #Preview {
-    AddTransactionView(provider: .constant(ProviderDto(
-        title: "Volksbank Mittelhessen (...9433)",
-        icon: "eurosign.bank.building",
-        transactions: [],
-        type: .debitCard
-    )))
+    AddTransactionView(
+        provider: .constant(
+            ProviderDto(
+                title: "Volksbank Mittelhessen (...9433)",
+                icon: "eurosign.bank.building",
+                transactions: [],
+                type: .debitCard
+            )))
 }

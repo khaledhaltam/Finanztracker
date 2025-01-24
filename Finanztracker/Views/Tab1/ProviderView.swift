@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct ProviderView: View {
-    @State var provider: ProviderDto // Binding für direkten Datenfluss
-    @State private var showingAddTransactionView = false
+    @EnvironmentObject var data: Data
+    var provider: ProviderDto
+
+    @State private var showingAddTransaction = false
 
     var body: some View {
         VStack {
-            // Kontostand oben hervorheben
             VStack(spacing: 8) {
                 Text("Kontostand")
                     .font(.headline)
@@ -23,8 +24,9 @@ struct ProviderView: View {
             .padding(.horizontal)
             .padding(.top)
 
+
+
             if provider.transactions.isEmpty {
-                // Keine Transaktionen vorhanden
                 VStack(spacing: 20) {
                     Image(systemName: "tray.and.arrow.down.fill")
                         .resizable()
@@ -44,7 +46,7 @@ struct ProviderView: View {
                         .padding(.horizontal)
 
                     Button(action: {
-                        showingAddTransactionView = true
+                        showingAddTransaction = true
                     }) {
                         HStack {
                             Image(systemName: "plus.circle")
@@ -60,28 +62,37 @@ struct ProviderView: View {
                     .padding(.horizontal)
                 }
                 .padding()
-                .sheet(isPresented: $showingAddTransactionView) {
-                    AddTransactionView(provider: $provider)
-                }
             } else {
-                // Liste der Transaktionen
                 List {
-                    ForEach(groupedTransactions.keys.sorted(by: >), id: \.self) { month in
-                        let transactions = groupedTransactions[month] ?? []
-                        let monthBalance = transactions.reduce(0) { $0 + $1.amount }
+                    ForEach(sortedGroupedTransactions.keys.sorted(by: >), id: \.self) { dateKey in
+                        if let transactions = sortedGroupedTransactions[dateKey] {
+                            let monthBalance = transactions.reduce(0) { $0 + $1.amount }
+                            let formattedMonth = formatDate(dateKey)
 
-                        Section(header: MonthHeaderView(month: month, balance: monthBalance)) {
-                            ForEach(transactions) { transaction in
-                                TransactionItem(transaction: transaction)
+                            Section(header: MonthHeaderView(month: formattedMonth, balance: monthBalance)) {
+                                ForEach(transactions) { transaction in
+                                    TransactionItem(transaction: transaction)
+                                }
                             }
                         }
                     }
                 }
                 .listStyle(.plain)
+                .navigationBarItems(
+                    trailing:
+                        Button(action: {
+                            showingAddTransaction = true
+                        }) {
+                            Image(systemName: "plus")
+                        }
+                )
             }
         }
         .navigationTitle(provider.title)
-        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingAddTransaction) {
+            AddTransactionView(provider: $data.providers[data.providers.firstIndex(where: { $0.id == provider.id })!])
+                .environmentObject(data)
+        }
     }
 
     private var totalBalance: Double {
@@ -98,12 +109,22 @@ struct ProviderView: View {
         }
     }
 
-    private var groupedTransactions: [String: [TransactionDto]] {
-        Dictionary(grouping: provider.transactions) { transaction in
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM yyyy"
-            return formatter.string(from: transaction.date)
+    private var sortedGroupedTransactions: [Date: [TransactionDto]] {
+        // Gruppierung nach Jahr und Monat
+        let grouped = Dictionary(grouping: provider.transactions) { transaction in
+            Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: transaction.date))!
         }
+
+        // Sortierung der Transaktionen in jeder Gruppe
+        return grouped.mapValues { transactions in
+            transactions.sorted { $0.date > $1.date }
+        }
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
     }
 }
 
@@ -129,12 +150,10 @@ struct MonthHeaderView: View {
         title: "Volksbank Mittelhessen (...9433)",
         icon: "eurosign.bank.building",
         transactions: [
-            /*
             TransactionDto(title: "Netflix", amount: -12.99, date: Date().addingTimeInterval(-86400 * 2)),
             TransactionDto(title: "Amazon", amount: -50.00, date: Date().addingTimeInterval(-86400 * 30)),
             TransactionDto(title: "Gehaltszahlung", amount: 2000.00, date: Date().addingTimeInterval(-86400 * 60)),
             TransactionDto(title: "Spotify", amount: -9.99, date: Date().addingTimeInterval(-86400 * 90))
-        */
         ],
         type: .debitCard
     )
